@@ -27,9 +27,10 @@ class Player:
         # Prevent the player from going out of bounds
         if self.playerRect.x > screenX - self.playerRect.width:
             self.playerRect.x = screenX - self.playerRect.width
+            pygame.quit() 
         elif self.playerRect.x < 0:
             self.playerRect.x = 0
-
+            pygame.quit() 
         if self.playerRect.y > screenY - self.playerRect.height:
             self.playerRect.y = screenY - self.playerRect.height
             self.velocity_y = 0
@@ -40,45 +41,27 @@ class Player:
     def collision(self, collidedObj):
         # Wall collision (left side)
         # Floor collision
-        self.playerRect.x -= collidedObj.speed
-        
-        if self.playerRect.colliderect(collidedObj.left_wall):
-            self.playerRect.right = collidedObj.left_wall.left
+        if self.velocity_y > 10:
+            if self.playerRect.colliderect(collidedObj.top_wall):
+                self.playerRect.bottom = collidedObj.top_wall.top + 1
+                self.is_on_ground = True
+                print("Floor Detected")
             
-        if self.playerRect.colliderect(collidedObj.top_wall):
-            self.playerRect.bottom = collidedObj.top_wall.top
-            self.is_on_ground = True
+            elif self.playerRect.colliderect(collidedObj.left_wall):
+                self.playerRect.right = collidedObj.left_wall.left
+            elif self.playerRect.colliderect(collidedObj.right_wall):
+                self.playerRect.left = collidedObj.right_wall.right
         else:
-            self.is_on_ground = False
             
-        if self.playerRect.colliderect(collidedObj.right_wall):
-            self.playerRect.left = collidedObj.right_wall.right
-            
+            if self.playerRect.colliderect(collidedObj.left_wall):
+                self.playerRect.right = collidedObj.left_wall.left
+            elif self.playerRect.colliderect(collidedObj.right_wall):
+                self.playerRect.left = collidedObj.right_wall.right
+            elif self.playerRect.colliderect(collidedObj.top_wall):
+                self.playerRect.bottom = collidedObj.top_wall.top + 1
+                self.is_on_ground = True
+                print("Floor Detected")
 
-        
-        # if self.playerRect.bottom >= collidedObj.PositionSize.top and self.playerRect.y < collidedObj.PositionSize.top:
-        #     if self.playerRect.right > collidedObj.PositionSize.left + 1 or self.playerRect.left < collidedObj.PositionSize.right - 1:
-        #         self.playerRect.bottom = collidedObj.PositionSize.top
-        #         self.is_on_ground = True
-        # else:
-        #     self.is_on_ground = False
-            
-        
-        # if self.is_on_ground == False:
-        #     if self.playerRect.right >= collidedObj.PositionSize.left and self.playerRect.bottom > collidedObj.PositionSize.top + 10:
-        #         self.playerRect.right = collidedObj.PositionSize.left
-                
-                
-        #     if self.playerRect.left <= collidedObj.PositionSize.right and self.playerRect.bottom > collidedObj.PositionSize.top + 10:
-        #          self.playerRect.left = collidedObj.PositionSize.right
-        
-          
-
-        
-        
-        print("Floor Detected")
-        # else:
-        #     self.is_on_ground = False  # In the air (not on the ground)
 
     def apply_Ymovement(self):
         # Apply affecting vertical speed
@@ -129,9 +112,9 @@ class Obstacle():
 
     def __init__(self, Xposition):
         self.PositionSize = pygame.Rect(Xposition, screenY - self.choose_height() * 50, obstacleWidth, 200)
-        self.speed = 2
+        self.speed = 10
         self.left_wall = pygame.Rect(self.PositionSize.left, self.PositionSize.y + 10, 10, 200)
-        self.top_wall = pygame.Rect(self.PositionSize.left, self.PositionSize.y, obstacleWidth, 10)
+        self.top_wall = pygame.Rect(self.PositionSize.left + 5, self.PositionSize.y, obstacleWidth - 10, 10)
         self.right_wall = pygame.Rect(self.PositionSize.right - 10, self.PositionSize.y + 10, 10, 200)
         
         
@@ -143,7 +126,7 @@ class Obstacle():
 
         self.PositionSize.x -= self.speed
         self.left_wall.x = self.PositionSize.left
-        self.top_wall.x = self.PositionSize.x
+        self.top_wall.x = self.PositionSize.x + 5
         self.right_wall.x = self.PositionSize.right - 10
         
         if self.PositionSize.x + self.PositionSize.width < 0:
@@ -153,13 +136,21 @@ class Obstacle():
             self.right_wall.y = self.PositionSize.y + 10
             self.PositionSize.x = screenX  
             
+class Weather():
+    def __init__(self, ):
+        self.speed = 0
+    
+    def displayWeather(self):
+        print("sdasfdsfjd")
+    
+
 
 
 class Game:
     def __init__(self):
         self.running = True
         self.player = Player()
-        
+        self.weather = Weather()
         self.grounds = []
         for i in range(int(screenX/obstacleWidth) + 2):
             
@@ -172,36 +163,45 @@ class Game:
                     self.running = False
 
             screen.fill((255, 255, 255))
-
+            self.weather.displayWeather()
+            # if random.randint(1, 60) == 2:
+            #     self.weather.speed = random.randint(-9, 9)
+            
+            self.player.playerRect.x += self.weather.speed
+            
             
             # Move and draw each ground piece
             # experiment for when hit boxes work 
             # self.ground.PositionSize.y = screenY - self.ground.choose_height() * 50
             colliding = False
             
-            collidedGround = None
+            collidedGrounds = []
             
             for ground in self.grounds:
-                if self.player.playerRect.colliderect(ground.left_wall) or self.player.playerRect.colliderect(ground.top_wall) or self.player.playerRect.colliderect(ground.right_wall):
+                if self.player.playerRect.colliderect(ground.left_wall) \
+                        or self.player.playerRect.colliderect(ground.top_wall) \
+                        or self.player.playerRect.colliderect(ground.right_wall):
                     
-                    collidedGround = ground
+                    collidedGrounds.append(ground)
                     colliding = True
-     
+                    
                     
                     # self.player.playerPositionSize.y = self.player.playerPositionSize.y 
                 ground.move()
-                pygame.draw.rect(screen, (0, 0, 0), ground.PositionSize)
+
                 pygame.draw.rect(screen, (0, 0, 225), ground.left_wall)
                 pygame.draw.rect(screen, (0, 225, 225), ground.top_wall)
                 pygame.draw.rect(screen, (225, 0, 225), ground.right_wall)
+                pygame.draw.rect(screen, (0, 0, 0), ground.PositionSize)
                 
             if colliding:
                 self.player.color = GREEN
-                self.player.is_on_ground = True
-                self.player.collision(collidedGround)
-                # self.player.playerPositionSize.y = 
+                # self.player.is_on_ground = True
+                for collidedground in collidedGrounds:
+                    self.player.collision(collidedground)
             else:
                 self.player.is_on_ground = False
+                print("falling")
                 self.player.color = GREEN
                 self.player.collidingGround = False
             # Draw the player
