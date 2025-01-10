@@ -13,6 +13,9 @@ RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
 YELLOW = (255, 255, 0)
+LIGHT_BLUE = (100, 100, 255)
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
 
 #class for player
 class Player:
@@ -24,50 +27,10 @@ class Player:
         self.velocity_y = 0
         self.is_on_ground = False
         self.color = GREEN
-        self.collidingGround = False
         self.canMove = True
-
-
-    #checks if im touching an edge of the screen
-    def checkBorder(self):
-        # Prevent the player from going out of bounds
-        if self.playerRect.x > screenX - self.playerRect.width:
-            self.playerRect.x = screenX - self.playerRect.width
-            pygame.quit() 
-        elif self.playerRect.x < 0:
-            self.playerRect.x = 0
-            pygame.quit() 
-        if self.playerRect.y > screenY - self.playerRect.height:
-            self.playerRect.y = screenY - self.playerRect.height
-            self.velocity_y = 0
-            self.is_on_ground = True
-        elif self.playerRect.y < 0:
-            self.playerRect.y = 0
-
-    #is called when im colliding with an obstical/ground
-    def collision(self, collidedObj):
-        # Wall collision (left side)
-        # Floor collision
+        self.time_counter = 0
         
-        #if im falling fast enough(speed of 10) then I can glitch through the ground
-        #So check my collision in the floor first, then with the side
-        if self.velocity_y > 10:
-            if self.playerRect.colliderect(collidedObj.top_wall):
-                self.playerRect.bottom = collidedObj.top_wall.top + 1
-                self.is_on_ground = True            
-            elif self.playerRect.colliderect(collidedObj.left_wall):
-                self.playerRect.right = collidedObj.left_wall.left
-            elif self.playerRect.colliderect(collidedObj.right_wall):
-                self.playerRect.left = collidedObj.right_wall.right
-        else:
-            #if im going slow, then check my side collisions first
-            if self.playerRect.colliderect(collidedObj.left_wall):
-                self.playerRect.right = collidedObj.left_wall.left
-            elif self.playerRect.colliderect(collidedObj.right_wall):
-                self.playerRect.left = collidedObj.right_wall.right
-            elif self.playerRect.colliderect(collidedObj.top_wall):
-                self.playerRect.bottom = collidedObj.top_wall.top + 1
-                self.is_on_ground = True
+
 
 
     #Moves the player verticaly, if y velocity is -, player goes up, if + player goes down
@@ -80,7 +43,13 @@ class Player:
         else:
             self.velocity_y = 0
 
-
+            
+    def startMovAgainTimer(self):
+        if not self.time_counter == 150:
+            self.time_counter += 1
+        else:
+            self.time_counter = 0
+            self.canMove = True
             
     
     def move(self):
@@ -99,9 +68,11 @@ class Player:
                 
             if keys[pygame.K_UP] and self.is_on_ground:
                 self.is_on_ground = False
-                self.collidingGround = False
+                # self.collidingGround = False
                 self.velocity_y = -15
-
+        else:
+            self.startMovAgainTimer()
+            
 
         #do the y moving logic
         self.apply_Ymovement()
@@ -111,8 +82,7 @@ class Player:
         self.playerRect.y += self.velocity_y
 
         
-        # Check borders
-        self.checkBorder()
+
         
 
 class Enemy:  
@@ -122,55 +92,9 @@ class Enemy:
         self.speed = 3
         self.velocity_y = 0
         self.is_on_ground = False
-        self.color = YELLOW
-        self.collidingGround = False
-        self.collidingWall = False
-
-
-    #checks if im touching an edge of the screen
-    def checkBorder(self):
-        # Prevent the player from going out of bounds
-        if self.enemyRect.x > screenX - self.enemyRect.width:
-            self.enemyRect.x = screenX - self.enemyRect.width
-        elif self.enemyRect.x < 0:
-            self.enemyRect.x = 0
-        if self.enemyRect.y > screenY - self.enemyRect.height:
-            self.enemyRect.y = screenY - self.enemyRect.height
-            self.velocity_y = 0
-            self.is_on_ground = True
-        elif self.enemyRect.y < 0:
-            self.enemyRect.y = 0
-
-    #is called when im colliding with an obstical/ground
-    def collision(self, collidedObj):
-        # Wall collision (left side)
-        # Floor collision
-
-        #if im falling fast enough(speed of 10) then I can glitch through the ground
-        #So check my collision in the floor first, then with the side
-        if self.velocity_y > 10:
-            if self.enemyRect.colliderect(collidedObj.top_wall):
-                self.enemyRect.bottom = collidedObj.top_wall.top + 1
-                self.is_on_ground = True
-
-            elif self.enemyRect.colliderect(collidedObj.left_wall):
-                self.enemyRect.right = collidedObj.left_wall.left
-                self.collidingWall = True
-            elif self.enemyRect.colliderect(collidedObj.right_wall):
-                self.enemyRect.left = collidedObj.right_wall.right
-                self.collidingWall = True
-        else:
-            #if im going slow, then check my side collisions first
-            if self.enemyRect.colliderect(collidedObj.left_wall):
-                self.enemyRect.right = collidedObj.left_wall.left
-                self.collidingWall = True
-            elif self.enemyRect.colliderect(collidedObj.right_wall):
-                self.enemyRect.left = collidedObj.right_wall.right
-                self.collidingWall = True
-            elif self.enemyRect.colliderect(collidedObj.top_wall):
-                self.enemyRect.bottom = collidedObj.top_wall.top + 1
-                self.is_on_ground = True
-
+        self.color = LIGHT_BLUE
+        self.collidingSideGround = True
+        self.deleteEnemy = False
 
 
     #Moves the player verticaly, if y velocity is -, player goes up, if + player goes down
@@ -182,10 +106,13 @@ class Enemy:
                 
         else:
             self.velocity_y = 0
-            
+
+#
+    
     def move(self, player):
         
         keys = pygame.key.get_pressed()
+
         #move the player according to left and right
         if player.x < self.enemyRect.x:
             self.enemyRect.x -= self.speed
@@ -193,23 +120,46 @@ class Enemy:
             self.enemyRect.x += self.speed
 
         # Vertical movement (jumping)
+
+ 
+        if self.is_on_ground \
+            and \
+            (self.collidingSideGround or (self.enemyRect.y > player.y 
+            and \
+            ((self.enemyRect.x > player.x - 100 and self.enemyRect.x < player.x) 
+            or \
+            (self.enemyRect.x < player.x + 100 and self.enemyRect.x > player.x)))):
             
-        if self.is_on_ground and (self.collidingWall or self.enemyRect.y < player.y):
             self.is_on_ground = False
-            self.collidingGround = False
+            # self.collidingGround = False
             self.velocity_y = -15
+
 
         #do the y moving logic
         self.apply_Ymovement()
 
+        
         # Move player vertically according to the velocity
         self.enemyRect.y += self.velocity_y
 
         
-        # Check borders
-        self.checkBorder()
+class Wall():
+    def __init__(self):
+        height = 500
+        self.speed = 5
+        self.direction = 1
+        self.Xposition = 0
+        self.wallRect = pygame.Rect(self.Xposition, 50, 50, height)
         
-        
+    def move(self):
+        if self.direction == 1:
+            self.wallRect.x += self.speed
+        else:
+           self.wallRect.x -= self.speed
+
+
+    
+             
 
      
 #making a variable accesable everywhere, with the width of the obstacles
@@ -253,10 +203,193 @@ class Floor():
 
 #work in progress feature    
 class Weather():
-    #moves the player randomly, making it more difficult of the player
-    print("")
+    def __init__(self):
+        self.weatherCounter = 0
+        self.rainy = False
+        self.normal = True
+        self.weatherType = ["rainy", "normal"]
+        self.rainParticles = []
+        self.numberOfRain = 0
+
+        
+    def changeWeather(self):
+        
+        match random.choice(self.weatherType):     
+            case 'normal':
+                print('normal')
+                self.rainParticles = []
+            case 'rainy':
+                
+                print('rainy')
+                
+                self.rainParticles.append(Particles(5 * 120, -50))
+                
+        print("tem")
+    def updateRain(self):
+        if not self.rainParticles == []:
+            for i in range(13):
+                self.rainParticles.append(Particles(i * 100, 0))
+            
+            for particle in self.rainParticles:
+                if particle.shouldRemove():
+                    self.rainParticles.remove(particle)
+                particle.move()
+                pygame.draw.rect(screen, (BLUE), particle.particleRect)
+        
+            
+
+class CollisionHandler:
+    def __init__(self):
+        self.playerHasCollided = False
+        self.enemyHasCollided = False
+        self.particleHasCollided = False
+        
+        self.collidingPlayer = False
+        self.collidingEnemy = False
+        self.collidingParticle = False
+         
+        self.playerCollidedGronds = []
+        self.enemyCollidedGrounds = []
+        self.particleCollidedGrounds = []
+        
+        self.time_counter = 0
+    def windowCollisions(self, entity, entityRect, playerDieOnTouch, isWall):
+        # Prevent the entity from going out of bounds
+        if not isWall:
+            if entityRect.x > screenX - entityRect.width:
+                entityRect.x = screenX - entityRect.width
+                if playerDieOnTouch == True:
+                    pygame.quit() 
+            elif entityRect.x < 0:
+                entityRect.x = 0
+                if playerDieOnTouch == True:
+                    pygame.quit() 
+            if entityRect.y > screenY - entityRect.height:
+                entityRect.y = screenY - entityRect.height
+                entity.velocity_y = 0
+                entity.is_on_ground = True
+            elif entityRect.y < 0:
+                entityRect.y = 0
+        elif isWall:
+            if entityRect.x > screenX:
+                entityRect.x = -50
 
 
+    
+    def checkforGoundCollisions(self, grounds, player, enemy, particles):
+        self.playerHasCollided = False
+        self.enemyHasCollided = False
+        for ground in grounds:
+            if self.checkSubWallCollisions(player.playerRect, player, ground):
+                self.playerCollidedGronds.append(ground)
+                self.playerHasCollided = True
+            if not enemy == None:
+                if self.checkSubWallCollisions(enemy.enemyRect, enemy, ground):
+                    self.enemyCollidedGrounds.append(ground)
+                    self.enemyHasCollided = True
+            # if not particles == None:
+            #     for particle in particles:
+            #         if self.checkSubWallCollisions(particle.particleRect, particle, ground):
+            #             self.particleCollidedGrounds.append(ground)
+            #             self.particleHasCollided = True
+
+        
+        if self.playerHasCollided: #player collided with a ground(s)
+            for collidedGround in self.playerCollidedGronds:
+                self.groundCollisions(collidedGround, player, player.playerRect)
+        else:
+            player.is_on_ground = False 
+            
+        if not enemy == None:    
+            if self.enemyHasCollided:
+                for collidedGround in self.enemyCollidedGrounds:
+                    self.groundCollisions(collidedGround, enemy, enemy.enemyRect)
+            else:
+                enemy.is_on_ground = False
+        # if not enemy == None:
+        #     if self.particleHasCollided:
+        #         for collidedGround in self.particleCollidedGrounds:
+        #             for particle in particles:
+        #              self.groundCollisions(collidedGround, particle, particle.particleRect)
+    def checkSubWallCollisions(self, entityRect, entity, mainGround):
+        if entityRect.colliderect(mainGround.left_wall) \
+                        or entityRect.colliderect(mainGround.top_wall) \
+                        or entityRect.colliderect(mainGround.right_wall):
+                    return True
+
+    
+    def enemyCanJumpWallCollisions(self, grounds, enemy):
+        for ground in grounds:
+            if enemy.enemyRect.colliderect(ground.left_wall) or enemy.enemyRect.colliderect(ground.right_wall):
+                enemy.collidingSideGround = True
+                return True
+
+    
+    def wallCollisions(self, wall, entity, entityRect):
+        if entityRect.colliderect(wall.wallRect) and entityRect.left < wall.wallRect.left:
+            entityRect.right = wall.wallRect.left
+            
+        elif entityRect.colliderect(wall.wallRect) and entityRect.right > wall.wallRect.right:
+            entityRect.left = wall.wallRect.right
+
+            
+    
+    
+    def groundCollisions(self, collidedGround, entity, entityRect):
+        if entity.velocity_y > 15:
+            if entityRect.colliderect(collidedGround.top_wall):
+                entityRect.bottom = collidedGround.top_wall.top + 1
+                entity.is_on_ground = True
+
+            elif entityRect.colliderect(collidedGround.left_wall):
+                entityRect.right = collidedGround.left_wall.left
+                entity.collidingWall = True
+            elif entityRect.colliderect(collidedGround.right_wall):
+                entityRect.left = collidedGround.right_wall.right
+                entity.collidingWall = True
+        else:
+            #if im going slow, then check my side collisions first
+            if entityRect.colliderect(collidedGround.left_wall):
+                entityRect.right = collidedGround.left_wall.left
+                self.collidingWall = True
+            elif entityRect.colliderect(collidedGround.right_wall):
+                entityRect.left = collidedGround.right_wall.right
+                entity.collidingWall = True
+            elif entityRect.colliderect(collidedGround.top_wall):
+                entityRect.bottom = collidedGround.top_wall.top + 1
+                entity.is_on_ground = True
+                
+    def checkEnemyPlayerCollision(self, enemy, player):
+        if player.playerRect.colliderect(enemy.enemyRect):
+            player.canMove = False
+            enemy.deleteEnemy = True
+            return True
+            
+            
+class Particles():
+    def __init__(self, xposition, yposition):
+        self.particleRect = pygame.Rect(xposition, yposition, random.randint(5, 10), random.randint(5, 10))
+        self.dirX = random.randint(-2, 2)
+        self.velocity_y = random.randint(-5, 0)
+        self.lifeSpan = 500 #game ticks
+        self.is_on_ground = False
+        self.counter = 0
+    def move(self):
+        
+        self.particleRect.x += self.dirX
+        
+        gravity = 0.4
+        
+        self.velocity_y += gravity
+        
+        # Move player vertically according to the velocity
+        self.particleRect.y += self.velocity_y
+    def shouldRemove(self):
+        if self.counter == self.lifeSpan:
+            self.counter = 0
+            return True
+        else: 
+            self.counter += 1
 #main part of the game
 class Game:
     #initializing all of our objects
@@ -265,17 +398,23 @@ class Game:
         self.player = Player()
         self.enemy = None
         self.weather = Weather()
-        #makig all the obstacles in one array,
+        self.handleCollisions = CollisionHandler()
+        self.particles = []
         self.grounds = []
         self.time_counter = 0
+        self.weather_counter = 0
         self.has_collided = False
-        self.counter = 0
+        self.enemySpawn_Counter = 0
+        self.wall = Wall()
+        self.deleteEnemy = False
+        self.makeFreezeParticales = False
+        self.previousEnemyColor = None
         
         #choosing the number of obstacles that fill the screen
         for i in range(int(screenX/obstacleWidth) + 2):
             
             self.grounds.append(Floor(screenX - i * obstacleWidth))
-        
+
     def game_loop(self):
         while self.running:
             
@@ -283,100 +422,109 @@ class Game:
                 if event.type == pygame.QUIT:
                     self.running = False
 
-            screen.fill((255, 255, 255))
-            
+            screen.fill(BLACK)
+            if self.enemy:
+                if self.enemy.deleteEnemy:
+                    
+                    self.enemy = None
             
             if self.enemy == None:
-                
-                if self.counter == 300:
+                if self.enemySpawn_Counter == 500:
                     self.enemy = Enemy()
-                    self.counter = 0
+                    self.enemy.deleteEnemy = False
+                    self.enemySpawn_Counter = 0
+                else:  
+                    self.enemySpawn_Counter += 1
+            
+            if self.weather_counter == 600:
+                self.weather.changeWeather()
+                self.weather_counter = 0
+                print("test")
+            else:
+                self.weather_counter += 1    
+            
+            self.handleCollisions.windowCollisions(self.player, self.player.playerRect, True, False)
+            
+            if not self.enemy == None:
+                self.previousEnemyColor = self.enemy.color 
+                self.handleCollisions.windowCollisions(self.enemy, self.enemy.enemyRect, False, False)
+                
+                if self.handleCollisions.enemyCanJumpWallCollisions(self.grounds, self.enemy):
+                    self.enemy.collidingSideGround = True
                 else:
-                    self.counter += 1
+                    self.enemy.collidingSideGround = False
+
                     
             
+            self.handleCollisions.checkforGoundCollisions(self.grounds, self.player, self.enemy, self.particles)
+            
+            
+            
+            self.handleCollisions.windowCollisions(self.wall, self.wall.wallRect, False, True)
+            
+            self.handleCollisions.wallCollisions(self.wall, self.player, self.player.playerRect)
+            
+
+
             
             collidingPlayer = False
             collidingEnemy = False
             
-            
-            
             collidedGroundsPlayer = []
             collidedGroundsEnemy = []
             
-            def check_collisons(mainObj, collidingObj):
-                if mainObj.colliderect(collidingObj.left_wall) \
-                        or mainObj.colliderect(collidingObj.top_wall) \
-                        or mainObj.colliderect(collidingObj.right_wall):
-                    return True
+            
+            
+            
+   
+            if not self.enemy == None:
+                self.handleCollisions.checkEnemyPlayerCollision(self.enemy, self.player)
+                # if self.handleCollisions.checkEnemyPlayerCollision(self.enemy, self.player):
+                #     self.makeFreezeParticales = True
+                    
+                    
+            if not self.player.canMove:
+            #WORK IN PRORESS
+                self.particles.append( Particles(self.player.playerRect.x + self.player.playerRect.width / 2, self.player.playerRect.y + self.player.playerRect.height /2))
+            
+            
+            
+            
+            #move the player
+            self.player.move()
+            pygame.draw.rect(screen, self.player.color, self.player.playerRect)         
+            self.weather.updateRain()
+            self.wall.move()
+            pygame.draw.rect(screen, (WHITE), self.wall.wallRect)     
+
+            if not self.enemy == None: 
+                self.enemy.move(self.player.playerRect)
+                pygame.draw.rect(screen, self.enemy.color, self.enemy.enemyRect)
+            
             
             for ground in self.grounds: # going through every ground
-                #checking for collsions with the secondary grounds
-                if check_collisons(self.player.playerRect, ground): 
-                    #saving which main ground we collided with
-                    collidedGroundsPlayer.append(ground)
-                    collidingPlayer = True
-                if not self.enemy == None:
-                    if check_collisons(self.enemy.enemyRect, ground):
-                        collidedGroundsEnemy.append(ground)
-                        collidingEnemy = True
-                #moving the main ground, which will move the secondary ones with it
                 ground.move()
-
                 #drawing all the grounds, drawing secondary isnt nessasery, but its easier for debugging
                 pygame.draw.rect(screen, (0, 0, 225), ground.left_wall)
                 pygame.draw.rect(screen, (0, 225, 225), ground.top_wall)
                 pygame.draw.rect(screen, (225, 0, 225), ground.right_wall)
-                pygame.draw.rect(screen, (0, 0, 0), ground.PositionSize) #draw the main ground before the secondary ones too see them
-                
-            if collidingPlayer: # if we did collide with a ground do this
-                for collidedground in collidedGroundsPlayer: #for every ground that we collided with
-                    self.player.collision(collidedground) #call players collision checks         
-            else:# we did not collide
-                self.player.is_on_ground = False
-                self.player.collidingGround = False
+                pygame.draw.rect(screen, (WHITE), ground.PositionSize) #draw the main ground before the secondary ones too see them
             
-            if not self.enemy == None:
-                if collidingEnemy:
-                    for collidedground in collidedGroundsEnemy: #for every ground that we collided with
-                        self.enemy.collision(collidedground) #call enemy collision checks   
-                else:# we did not collide
-                    self.enemy.is_on_ground = False
-                    self.enemy.collidingGround = False
-                    self.enemy.collidingWall = False
-            
-
-            
-            if not self.enemy == None:
-                if self.player.playerRect.colliderect(self.enemy.enemyRect):
-                    self.has_collided = True
-                    self.enemy = None
+            for particle in self.particles:
+                if particle.shouldRemove():
+                    self.particles.remove(particle)
+                particle.move()
+                pygame.draw.rect(screen, (self.previousEnemyColor), particle.particleRect)
 
                 
-            if self.has_collided and not self.time_counter == 150:
-                    self.player.canMove = False
-                    self.time_counter += 1
-            else:
-                self.has_collided = False
-                self.player.canMove = True
-                self.time_counter = 0
-                
-            #move the player
-            self.player.move()
-            pygame.draw.rect(screen, self.player.color, self.player.playerRect)         
             
-            if not self.enemy == None: 
-                self.enemy.move(self.player.playerRect)
-                # Draw the player
-    
-                pygame.draw.rect(screen, self.enemy.color, self.enemy.enemyRect)
-
             pygame.display.flip()
 
             clock.tick(60)
 
         pygame.quit()
-
+    def killEnemy(self):
+        self.enemy = None
 
 if __name__ == "__main__":
     game = Game()
